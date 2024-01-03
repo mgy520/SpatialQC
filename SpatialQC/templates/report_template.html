@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>SpatialQC Report</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .sidebar h1 {
+            font-family: Arial;
+            font-size: 36px;
+            color: purple;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .sidebar button.selected {
+            background-color: lightblue;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+        }
+        .sidebar {
+            grid-column: 1;
+            grid-row: 1 / span 2;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: space-around;
+            padding: 10px;
+        }
+        .sidebar button {
+            width: 100%;
+            height: 40px;
+            font-family: Arial;
+            font-size: 18px;
+            text-align: center;
+            background-color: white;
+            margin-bottom: 10px;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+        .main {
+            flex: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            padding: 10px;
+            width: 80vw;
+            overflow: auto;
+        }
+        .main select {
+            width: 100%;
+            height: 40px;
+            font-family: Arial;
+            font-size: 18px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .main #plot {
+            width: 100%;
+            height: 90vh;
+            border: 1px solid #ccc;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .main label {
+        display: block;
+        width: 100%;
+        text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>SpatialQC</h1>
+            <div id="buttons">
+                <button id="basic_statistics" onclick="updatePlot('basic_statistics')">Basic Statistics</button>
+                <button id="slice_score" onclick="updatePlot('slice_score')">Slice Score</button>
+                <button id="n_counts_per_cell" onclick="updatePlot('n_counts_per_cell')">n_counts Per Cell</button>
+                <button id="n_genes_per_cell" onclick="updatePlot('n_genes_per_cell')">n_genes Per Cell</button>
+                <button id="log10GenesPerUMI" onclick="updatePlot('log10GenesPerUMI')">Log10GenesPerUMI</button>
+                <button id="mito_box" onclick="updatePlot('mito_box')">Mitochondrial</button>
+                <button id="mito_ratio" onclick="updatePlot('mito_ratio')">Mitochondrial Scatterplot</button>
+                <button id="ribo" onclick="updatePlot('ribo')">Ribosomal</button>
+                <button id="hb" onclick="updatePlot('hb')">Hemoglobin</button>
+                <button id="marker_proportion" onclick="updatePlot('marker_proportion')">Marker Proportion</button>
+                <button id="cell_number" onclick="updatePlot('cell_number')">Cell Number Post Filter</button>
+                <button id="valid_cell" onclick="updatePlot('valid_cell')">Valid Cell Post min_genes</button>
+                <button id="marker_post_min_cells" onclick="updatePlot('marker_post_min_cells')">Markers Proportion Post Filter</button>
+                <button id="marker_detected_post_filter" onclick="updatePlot('marker_detected_post_filter')">Markers Detected Post Filter</button>
+            </div>
+        </div>
+        <div class="main">
+            <label for="sliceSelect" style="text-align: left;">Select Slice</label>
+            <select id="sliceSelect" onchange="updatePlot" title="Select Slice">
+                <!-- Options will be added dynamically -->
+            </select>
+            <div id="plot"></div>
+        </div>
+    </div>
+    <script>
+        var currentPlot = 'basic_statistics';
+        var currentSlice = 'all';
+        var button_plots_compressed_base64 = '{{data}}';
+
+        var button_plots_compressed_uint8 = new Uint8Array(atob(button_plots_compressed_base64).split('').map(function (c) {
+            return c.charCodeAt(0);
+        }));
+
+        var button_plots_raw_uint8 = pako.inflate(button_plots_compressed_uint8, { to: 'string' });
+        var buttonPlots;
+        buttonPlots = JSON.parse(button_plots_raw_uint8);
+
+        function updatePlot(plot = null) {
+            if (plot instanceof Event) {
+                plot = currentPlot;
+            } else if (plot !== null) {
+                currentPlot = plot;
+            }
+
+            var sliceSelect = document.getElementById('sliceSelect');
+            currentSlice = sliceSelect.value;
+
+            var plotDiv = document.getElementById('plot');
+            while (plotDiv.firstChild) {
+                Plotly.purge(plotDiv.firstChild);
+                plotDiv.removeChild(plotDiv.firstChild);
+            }
+
+            if (currentPlot.startsWith('slice_score') && currentSlice !== 'all') {
+                plotDiv.style.display = 'grid';
+                plotDiv.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                plotDiv.style.gridTemplateRows = 'repeat(2, 1fr)';
+                plotDiv.style.gridGap = '10px';
+                plotDiv.style.overflow = 'auto';
+                for (var i = 1; i <= 8; i++) {
+                    var subPlotDiv = document.createElement('div');
+                    plotDiv.appendChild(subPlotDiv);
+                    var data = buttonPlots.find(item => item.hasOwnProperty('s' + i + '_score_' + currentSlice))?.['s' + i + '_score_' + currentSlice]?.data;
+                    var layout = buttonPlots.find(item => item.hasOwnProperty('s' + i + '_score_' + currentSlice))?.['s' + i + '_score_' + currentSlice]?.layout;
+                    if (data && layout) {
+                        Plotly.newPlot(subPlotDiv, data, layout);
+                    } else {
+                        console.log('Slice data not found for: ' + 's' + i + '_score_' + currentSlice);
+                    }
+                }
+            } else {
+                plotDiv.style.display = 'block';
+                var data = buttonPlots.find(item => item.hasOwnProperty(currentPlot + '_' + currentSlice))?.[currentPlot + '_' + currentSlice]?.data;
+                var layout = buttonPlots.find(item => item.hasOwnProperty(currentPlot + '_' + currentSlice))?.[currentPlot + '_' + currentSlice]?.layout;
+                if (data && layout) {
+                    Plotly.newPlot('plot', data, layout);
+                } else {
+                    console.log('Slice data not found for: ' + currentPlot + '_' + currentSlice);
+                }
+            }
+
+            var buttons = document.querySelectorAll('.sidebar button');
+            buttons.forEach(button => {
+                if (button.id === currentPlot) {
+                    button.style.backgroundColor = 'lightblue';
+                } else {
+                    button.style.backgroundColor = 'white';
+                }
+            });
+        }
+
+        var sliceSelect = document.getElementById('sliceSelect');
+        var sliceNames = {{slice_names}};
+        sliceNames.forEach(slice => {
+            var option = document.createElement('option');
+            option.value = slice;
+            option.text = slice;
+            sliceSelect.appendChild(option);
+        });
+        updatePlot();
+
+        document.getElementById('sliceSelect').addEventListener('change', updatePlot);
+    </script>
+</body>
+</html>
