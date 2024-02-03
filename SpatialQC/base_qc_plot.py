@@ -59,27 +59,31 @@ def plot_distribution(adata, obs='n_genes'):
 def plot_kde(adata, obs='n_genes'):
     tmp = adata.obs[obs]
     kde = sns.kdeplot(tmp, log_scale=True, fill=False)
-    x_vals = kde.get_lines()[0].get_xdata()
-    y_vals = kde.get_lines()[0].get_ydata()
+    x_vals = []
+    y_vals = []
+    if len(kde.get_lines()) > 0:
+        x_vals = kde.get_lines()[0].get_xdata()
+        y_vals = kde.get_lines()[0].get_ydata()
     plt.clf()
 
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(x=x_vals.copy(), y=y_vals.copy(), mode='lines', line=dict(color='blue'), name='Kde')
     )
+    max_y = max(y_vals) if len(y_vals) > 0 else 0
     if obs == 'n_counts':
         fig.add_trace(
-            go.Scatter(x=[500, 500], y=[0, max(y_vals)], mode='lines', line=dict(color='red'),
+            go.Scatter(x=[500, 500], y=[0, max_y], mode='lines', line=dict(color='red'),
                        name='n_counts=500')
         )
     elif obs == 'n_genes':
         fig.add_trace(
-            go.Scatter(x=[300, 300], y=[0, max(y_vals)], mode='lines', line=dict(color='red'),
+            go.Scatter(x=[300, 300], y=[0, max_y], mode='lines', line=dict(color='red'),
                        name='n_genes=300')
         )
     else:
         fig.add_trace(
-            go.Scatter(x=[0.8, 0.8], y=[0, max(y_vals)], mode='lines', line=dict(color='red'),
+            go.Scatter(x=[0.8, 0.8], y=[0, max_y], mode='lines', line=dict(color='red'),
                        name='log10GenesPerUMI=0.8')
         )
     if obs == 'log10GenesPerUMI':
@@ -95,7 +99,7 @@ def plot_kde(adata, obs='n_genes'):
                 bgcolor='rgba(0,0,0,0)'
             ),
             yaxis=dict(
-                range=[0, max(y_vals)+3],
+                range=[0, max_y+3],
             ),
         )
     else:
@@ -115,7 +119,7 @@ def plot_kde(adata, obs='n_genes'):
                 range=[1, 5]
             ),
             yaxis=dict(
-                range=[0, max(y_vals) + 0.05],
+                range=[0, max_y + 0.05],
             ),
         )
     layout(fig)

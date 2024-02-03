@@ -7,7 +7,7 @@ from scipy.sparse import issparse
 
 
 @marker_decorator
-def slice_score(adata, markers, mito='Mt-', slice='id', mito_p=0.1, s1=None, s2=None,
+def slice_score(adata, markers, mito='Mt-', slice='id', mito_p=0.1, doublet=True, s1=None, s2=None,
                 s3=None, s4=None, s5=None, s6=None, s7=None, s8=None):
     default_values = {
         's1': [-1, 0],
@@ -39,18 +39,21 @@ def slice_score(adata, markers, mito='Mt-', slice='id', mito_p=0.1, s1=None, s2=
     else:
         adata.obs['marker_exp'] = np.sum(adata[:, common_genes].X, axis=1) / adata.obs['n_counts']
 
-    slice_list = adata.obs[slice].cat.categories.tolist()
-    alldata = {}
-    for i in slice_list:
-        adata_filtered = adata[adata.obs[slice] == i,]
-        scrub = scr.Scrublet(adata_filtered.X)
-        out = scrub.scrub_doublets(verbose=False)
-        alldata[i] = pd.DataFrame({'doublet_score': out[0], 'predicted_doublets': out[1]},
-                                  index=adata_filtered.obs.index)
+    if doublet:
+        slice_list = adata.obs[slice].cat.categories.tolist()
+        alldata = {}
+        for i in slice_list:
+            adata_filtered = adata[adata.obs[slice] == i,]
+            scrub = scr.Scrublet(adata_filtered.X)
+            out = scrub.scrub_doublets(verbose=False)
+            alldata[i] = pd.DataFrame({'doublet_score': out[0], 'predicted_doublets': out[1]},
+                                      index=adata_filtered.obs.index)
 
-    scr_result = pd.concat(alldata.values())
-    adata.obs['scrublet_doublet_scores'] = scr_result['doublet_score']
-    adata.obs['predicted_doublets'] = scr_result['predicted_doublets']
+        scr_result = pd.concat(alldata.values())
+        adata.obs['scrublet_doublet_scores'] = scr_result['doublet_score']
+        adata.obs['predicted_doublets'] = scr_result['predicted_doublets']
+    else:
+        adata.obs['predicted_doublets'] = False
 
     adata.obs['percent.mt_score'] = np.where(adata.obs['percent_mt'] > mito_p, s1[0], s1[1])
     adata.obs['log10GenesPerUMI_score'] = np.where(adata.obs['log10GenesPerUMI'] < s2[0], s2[1], s2[2])
@@ -138,12 +141,12 @@ def slice_score(adata, markers, mito='Mt-', slice='id', mito_p=0.1, s1=None, s2=
 
 
 def create_plot(adata, markers, species=None, tissue_class=None, tissue_type=None, cancer_type=None,
-                slice='id', mito='Mt-', mito_p=0.1, s1=None, s2=None, s3=None,
+                slice='id', mito='Mt-', mito_p=0.1, doublet=True, s1=None, s2=None, s3=None,
                 s4=None, s5=None, s6=None, s7=None, s8=None):
     data_fig, modified_adata = slice_score(adata, markers, species, tissue_class,
                                            tissue_type, cancer_type,
                                            slice=slice, mito=mito,
-                                           mito_p=mito_p, s1=s1, s2=s2, s3=s3, s4=s4,
+                                           mito_p=mito_p, doublet=doublet, s1=s1, s2=s2, s3=s3, s4=s4,
                                            s5=s5, s6=s6, s7=s7, s8=s8)
     return data_fig, modified_adata
 

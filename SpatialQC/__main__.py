@@ -39,6 +39,8 @@ def main():
                         "identifier in adata.obs.If there is only one slice, ignore this parameter.\ndefault: 'id'")
     group0.add_argument('--mito', default='Mt-', metavar='',
                         help="The pattern of mitochondrial genes.\ndefault: 'Mt-'")
+    group0.add_argument('--doublet', type=str2bool, default=True, metavar='',
+                        help="Whether to identify doublet cells. Recommended for data with single-cell resolution\ndefault: True")
     group2.add_argument('--mito_percent', default='0.1', metavar='', type=float,
                         help="Filter cells with mitochondrial proportion higher than mito_percent.\ndefault: 0.1")
     group0.add_argument('--ribo', default='Rps, Rpl', metavar='',
@@ -60,9 +62,11 @@ def main():
     group2.add_argument('--f', type=str2bool, metavar='', default=True, help='Whether to filter adata.\ndefault: True')
     group2.add_argument('--s', default=5, metavar='', type=int,
                         help='Sections with a median score less than s will be removed.\ndefault: 5')
+    group2.add_argument('--min_genes', default=None, metavar='',help='Provide your min_genes, otherwise determined by --n.\ndefault: None')
     group2.add_argument('--n', default=0.7, metavar='', type=float,
                         help='Determine the value of min_genes to ensure that the valid cell ratio is greater than n.'
                              '\ndefault: 0.7')
+    group2.add_argument('--min_cells', default=None, metavar='',help='Provide your min_cells, otherwise determined by --l.\ndefault: None')
     group2.add_argument('--l', default=0.99, metavar='', type=float,
                         help='After filtering cells, determine the value of min_cells to ensure that the proportion '
                              'of marker genes is greater than l among the remaining detected markers.\ndefault: 0.99')
@@ -131,7 +135,7 @@ def main():
     button_plots = []
     slice_score_fig_all, modified_adata = slice_score.create_plot(
         adata, markers, args.species, args.tissue_class, args.tissue_type, args.cancer_type, slice=args.slice,
-        mito=args.mito, mito_p=args.mito_percent, s1=args.s1, s2=args.s2, s3=args.s3, s4=args.s4, s5=args.s5,
+        mito=args.mito, mito_p=args.mito_percent, doublet=args.doublet, s1=args.s1, s2=args.s2, s3=args.s3, s4=args.s4, s5=args.s5,
         s6=args.s6, s7=args.s7, s8=args.s8)
     del adata
     if modified_adata.obs[args.slice].nunique() > 6:
@@ -378,27 +382,37 @@ def main():
     # filter
     if args.f:
         selected_slices = modified_adata.obs.groupby(args.slice)['cell_score'].median() > args.s
-        cdata = modified_adata[modified_adata.obs[args.slice].isin(selected_slices[selected_slices].index)]
-        cdata = cdata[~cdata.obs['predicted_doublets']].copy()
-        thresholds = cdata.obs.groupby(args.slice).apply(lambda group: group['n_genes'].quantile(1 - args.n))
-        final_threshold = int(thresholds.min() / 10) * 10
-        print(f"The suitable threshold for n_genes is: {final_threshold}")
+        cdata = modified_adata[modified_adata.obs[args.slice].isin(selected_slices[selected_slices].index)].copy()
+        if cdata.obs['predicted_doublets'].isnull().any():
+            print("Warning: 'predicted_doublets' contains null values. Maybe you need to double-check doublet")
+        cdata = cdata[cdata.obs['predicted_doublets'].isin([False, None])].copy()
+        if args.min_genes is None or args.min_genes == "None":
+            thresholds = cdata.obs.groupby(args.slice).apply(lambda group: group['n_genes'].quantile(1 - args.n))
+            final_threshold = int(thresholds.min() / 10) * 10
+            print(f"Automatic threshold for n_genes is: {final_threshold}")
+        else:
+            final_threshold = int(args.min_genes)
+            print(f"Using user-provided min_genes: {final_threshold}")
         sc.pp.filter_cells(cdata, min_genes=final_threshold)
         cdata = cdata[cdata.obs['percent_mt'] <= args.mito_percent].copy()
         sc.pp.filter_genes(cdata, min_cells=1)
-        from .get_markers import get_markers_from_db
-        get_markers_from_db(args.species, args.tissue_class, args.tissue_type, args.cancer_type)
-        markers = get_markers_from_db(args.species, args.tissue_class, args.tissue_type,
-                                      args.cancer_type) if args.markers is None else pd.read_csv(args.markers).squeeze(
-            "columns").tolist()
-        i = list(set(markers).intersection(cdata.var_names))
-        selected = cdata.var.loc[i]
-        threshold = int(selected['n_cells'].quantile(1 - args.l))
-        print(f"The suitable threshold for n_cells is: {threshold}")
+        if args.min_cells is None or args.min_cells == "None":
+            from .get_markers import get_markers_from_db
+            markers = get_markers_from_db(args.species, args.tissue_class, args.tissue_type,
+                                          args.cancer_type) if args.markers is None else pd.read_csv(
+                args.markers).squeeze(
+                "columns").tolist()
+            i = list(set(markers).intersection(cdata.var_names))
+            selected = cdata.var.loc[i]
+            threshold = int(selected['n_cells'].quantile(1 - args.l))
+            print(f"The suitable threshold for n_cells is: {threshold}")
+        else:
+            threshold = int(args.min_cells)
+            print(f"Using user-provided min_cells: {threshold}")
         sc.pp.filter_genes(cdata, min_cells=threshold)
         cdata.obs = cdata.obs.drop(['percent.mt_score', 'log10GenesPerUMI_score', 'n_genes_score', 'markerDetectionRatio_score',
          'markerProportion_score', 'markerCountsRatio_score', 'doublet_score', 'n_counts_score', 'cell_score', 'remain_ratio',
-                                    'marker_ratio', 'marker_exp'], axis=1)
+                                    'marker_ratio', 'marker_exp', 'predicted_doublets'], axis=1)
         cdata.write(filename=os.path.join(output_directory, args.o2))
 
 
