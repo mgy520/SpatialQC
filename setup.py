@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='SpatialQC',
-    version='1.0.0',
+    version='1.0.1',
     description=('Spatial transcriptome quality control, generate HTML QC report, obtain filtered clean data'
     ),
     author='Mao Guangyao',
