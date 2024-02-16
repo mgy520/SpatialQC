@@ -7,6 +7,7 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 
 #load raw data
 adata = sc.read('E8.5-Atlas_run.h5ad')
