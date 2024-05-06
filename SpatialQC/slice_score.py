@@ -40,6 +40,7 @@ def slice_score(adata, markers, mito='Mt-', slice='id', mito_p=0.1, doublet=True
         adata.obs['marker_exp'] = np.sum(adata[:, common_genes].X, axis=1) / adata.obs['n_counts']
 
     if doublet:
+        adata.obs[slice] = adata.obs[slice].astype('category')
         slice_list = adata.obs[slice].cat.categories.tolist()
         alldata = {}
         for i in slice_list:

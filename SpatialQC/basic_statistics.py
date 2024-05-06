@@ -10,12 +10,18 @@ def basic_statistics(adata, markers, slice='id'):
     slice_count = adata.obs[slice].nunique()
     median_n_genes = adata.obs['n_genes'].median()
     mean_n_genes = adata.obs['n_genes'].mean()
-    median_n_UMIs = adata.obs['n_counts'].median()
-    mean_n_UMIs = adata.obs['n_counts'].mean()
-    provided_marker_counts = len(set(markers))
-    detected_marker_counts = len(set(markers).intersection(adata.var_names))
-    marker_detected_ratio = detected_marker_counts / len(set(markers))
-    marker_proportion = detected_marker_counts / gene_count
+    median_n_UMIs = adata.obs['n_counts'].copy().median()
+    mean_n_UMIs = adata.obs['n_counts'].copy().mean()
+    if len(set(markers)) > 0:
+        provided_marker_counts = len(set(markers))
+        detected_marker_counts = len(set(markers).intersection(adata.var_names))
+        marker_detected_ratio = detected_marker_counts / len(set(markers))
+        marker_proportion = detected_marker_counts / gene_count
+    else:
+        provided_marker_counts = float('NaN')
+        detected_marker_counts = float('NaN')
+        marker_detected_ratio = float('NaN')
+        marker_proportion = float('NaN')
     doublet_count = adata.obs['predicted_doublets'].sum()
 
     data = [['Measure', 'Value'],

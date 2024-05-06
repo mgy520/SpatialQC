@@ -25,7 +25,10 @@ def detect_markers_by_filter_cells(adata, markers, min_genes_list=None, min_cell
             valid_genes = new_n_cells >= frac
             remaining_genes = adata.var_names[valid_genes].tolist()
             overlap_genes = set(remaining_genes).intersection(markers_set)
-            marker_overlap_percent = len(overlap_genes) / counts
+            if counts > 0:
+                marker_overlap_percent = len(overlap_genes) / counts
+            else:
+                marker_overlap_percent = 0
             marker_overlap[frac].append(marker_overlap_percent)
 
     fig = go.Figure()

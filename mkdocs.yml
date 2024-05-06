@@ -1,0 +1,45 @@
+site_name: SpatialQC
+site_author: Mao Guangyao
+copyright: Copyright @ 2024 Mao Guangyao, All rights reserved.
+repo_url: https://github.com/mgy520/SpatialQC
+
+theme:
+  icon:
+    logo: material/home
+  name: "material"
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark
+
+    - media: "(prefers-color-scheme: dark)"
+      primary: teal
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tracking
+    - toc.follow
+    - navigation.top
+    - search.suggest
+    - navigation.footer
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Installation: Installation/index.md
+  - Tutorial:
+      - Tutorial/Analyze Visium data.md
+      - Tutorial/Analyze Vizgen MERFISH data.md
+      - Tutorial/Analyze Xenium data.md
+      - Tutorial/Analyze Visium HD data.md
+  - CLI Reference: CLI.md
+  - License:
+      - License/license.md

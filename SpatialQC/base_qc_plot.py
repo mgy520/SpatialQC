@@ -131,6 +131,10 @@ def mito_ratio(adata, mito_percent=0.1):
     n_counts = adata.obs['n_counts']
     n_genes = adata.obs['n_genes']
     percent_mt = adata.obs['percent_mt']
+    if percent_mt.min() == 0 and percent_mt.max() == 0:
+        point_color = 'blue'
+    else:
+        point_color = percent_mt
     fig = go.Figure()
 
     fig.add_trace(
@@ -140,7 +144,7 @@ def mito_ratio(adata, mito_percent=0.1):
             mode='markers',
             marker=dict(
                 size=4,
-                color=percent_mt,
+                color=point_color,
                 colorscale='Greys',
                 colorbar=dict(title='Percent mt'),
                 cmin=0,
