@@ -792,7 +792,7 @@ pd.Series(df.values.flatten()).dropna().to_csv('markers.csv', index=False, heade
 <p>Features of Visium: (1) spot containing multiple cells; (2) high depth; 
 (3)The number of spots is usually small. Other similar techniques include ST (spatial transcriptomics), Slide-seq, and DBiT-seq.</p>
 <p>Execute SpatialQC in the shell terminal:</p>
-<pre><code class="language-bash">SpatialQC --adata dlpfc.h5ad --markers markers.csv --platform Visium --slice slice --mito 'MT-' --ribo 'RPS,RPL' --mito_percent 0.3
+<pre><code class="language-bash">SpatialQC --input dlpfc.h5ad --markers markers.csv --platform Visium --slice slice --mito 'MT-' --ribo 'RPS,RPL' --mito_percent 0.3
 </code></pre>
 <pre><code>151507 score: 6.0
 151508 score: 5.0
