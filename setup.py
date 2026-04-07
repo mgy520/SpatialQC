@@ -17,7 +17,7 @@ setup(
             'SpatialQC = SpatialQC.__main__:main',
         ]
     },
-    python_requires='>=3.8,<3.9',
+    python_requires='>=3.8',
     install_requires=[
             'scanpy>=1.9.8',
             'joblib>=1.4.2',
