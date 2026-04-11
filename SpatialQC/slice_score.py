@@ -111,24 +111,21 @@ def slice_score(adata, markers, mito='Mt-', slice='id', mito_p=0.1, doublet=True
         upper_bound = q3 + 1.5 * iqr
         lowerfence = max(min(data), lower_bound)
         upperfence = min(max(data), upper_bound)
-        outliers = data[(data < lower_bound) | (data > upper_bound)]
-
-        data2 = [outliers] if outliers.any() else None
-
+        # Precomputed quartiles only (no per-cell y): avoids embedding 10^4–10^5
+        # outlier coordinates in the HTML and keeps the browser responsive.
         fig.add_trace(go.Box(
             x=[slice_id],
-            y=data2,
             q1=[q1],
             median=[median],
             q3=[q3],
             lowerfence=[lowerfence],
             upperfence=[upperfence],
-            boxpoints='outliers',
+            boxpoints=False,
             line_color='black',
             fillcolor='rgba(220, 65, 80, 0.5)',
-            hoverinfo='y',
+            hoverinfo='skip',
             opacity=0.7,
-            name=slice_id
+            name=str(slice_id)
         ))
 
     fig.update_layout(
@@ -166,24 +163,36 @@ def create_plot(adata, markers, species=None, tissue_class=None, tissue_type=Non
     return data_fig, modified_adata
 
 
-def specific_score(bdata, s_column):
-    coords = bdata.obsm['spatial']
-    colors = bdata.obs[s_column]
+def specific_score(bdata, s_column, max_points=50000):
+    """Spatial score map; Scattergl + optional subsample for large MERFISH-style datasets."""
+    coords = np.asarray(bdata.obsm['spatial'])
+    colors = np.asarray(bdata.obs[s_column], dtype=float)
+    n_total = coords.shape[0]
+    if n_total > max_points:
+        rng = np.random.default_rng(0)
+        idx = rng.choice(n_total, size=max_points, replace=False)
+        coords = coords[idx]
+        colors = colors[idx]
+    x = coords[:, 0]
+    y = coords[:, 1]
 
-    fig = go.Figure(data=go.Scatter(
-        x=coords[:, 0],
-        y=coords[:, 1],
+    fig = go.Figure(data=go.Scattergl(
+        x=x,
+        y=y,
         mode='markers',
         marker=dict(
-            size=4,
+            size=3,
             color=colors,
             colorscale='Viridis',
-            colorbar=dict(title=s_column, xanchor="left", x=0.8, thickness=10)
-        )
+            colorbar=dict(title=s_column, xanchor="left", x=0.8, thickness=10),
+            line=dict(width=0),
+        ),
+        hoverinfo='skip',
     ))
 
+    title_suffix = f' (n={max_points}/{n_total} shown)' if n_total > max_points else ''
     fig.update_layout(
-        title=dict(text=s_column, x=0.5, y=0.99),
+        title=dict(text=s_column + title_suffix, x=0.5, y=0.99),
         autosize=False,
         plot_bgcolor='white',
         xaxis=dict(
