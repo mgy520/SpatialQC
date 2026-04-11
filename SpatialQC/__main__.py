@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 
 def main():
@@ -125,7 +126,7 @@ def main():
         args.s = args.s if args.s else 4
         args.min_genes_list = args.min_genes_list if args.min_genes_list else [0, 200, 400, 600, 800, 1000, 1200]
         args.min_genes_list2 = args.min_genes_list2 if args.min_genes_list2 else [0, 200, 400, 600, 800, 1000, 1200]
-        args.min_cells_list = args.min_cells_list if args.min_genes_list else [1, 2, 3, 4, 5]
+        args.min_cells_list = args.min_cells_list if args.min_cells_list else [1, 2, 3, 4, 5]
     elif args.platform in ['MERFISH', 'Xenium', 'CosMx', 'HybISS']:
         args.doublet = args.doublet if args.doublet else True
         args.n = args.n if args.n else 0.9
@@ -133,7 +134,7 @@ def main():
         args.s = args.s if args.s else 3
         args.min_genes_list = args.min_genes_list if args.min_genes_list else [0, 10, 20, 30, 40, 50]
         args.min_genes_list2 = args.min_genes_list2 if args.min_genes_list2 else [0, 10, 20, 30, 40, 50]
-        args.min_cells_list = args.min_cells_list if args.min_genes_list else [1]
+        args.min_cells_list = args.min_cells_list if args.min_cells_list else [1]
         args.s2 = args.s2 if args.s2 else [0, 0, 1]
     elif args.platform in ['Stereo-seq', 'Seq-scope', 'Pixel-seq', 'HDST', 'Visium HD']:
         args.doublet = args.doublet if args.doublet else True
@@ -142,7 +143,7 @@ def main():
         args.s = args.s if args.s else 4
         args.min_genes_list = args.min_genes_list if args.min_genes_list else [0, 200, 400, 600, 800, 1000, 1200]
         args.min_genes_list2 = args.min_genes_list2 if args.min_genes_list2 else [0, 200, 400, 600, 800, 1000, 1200]
-        args.min_cells_list = args.min_cells_list if args.min_genes_list else [0, 10, 20, 30, 40]
+        args.min_cells_list = args.min_cells_list if args.min_cells_list else [0, 10, 20, 30, 40]
     else:
         if args.platform is not None:
             raise ValueError(f"Invalid platform: {args.platform}")   
@@ -159,13 +160,14 @@ def main():
     elif file_extension == '.rds':
         adata = get_input.convert_to_anndata(args.input)
     else:
-        print(f"Unsupported file types: {file_extension}")
-        
+        print(f"Unsupported file types: {file_extension}", file=sys.stderr)
+        sys.exit(1)
+
     sc.pp.filter_cells(adata, min_genes=1)
     sc.pp.filter_cells(adata, min_counts=1)
     sc.pp.filter_genes(adata, min_cells=1)
-    ribo_genes = adata.var_names.str.startswith(tuple(args.ribo.split(',')))
-    hb_genes = adata.var_names.str.startswith(tuple(args.hemo.split(',')))
+    ribo_genes = adata.var_names.str.startswith(tuple(x.strip() for x in args.ribo.split(',')))
+    hb_genes = adata.var_names.str.startswith(tuple(x.strip() for x in args.hemo.split(',')))
     import numpy as np
     from joblib import Parallel, delayed
     adata.obs['percent_hb'] = np.sum(

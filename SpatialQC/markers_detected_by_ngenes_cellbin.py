@@ -1,6 +1,6 @@
 import plotly.graph_objects as go
 import numpy as np
-import scipy
+from scipy.sparse import issparse
 from .get_markers import marker_decorator
 
 
@@ -13,7 +13,7 @@ def markers_detected_by_diff_ngenes_bar(adata, markers, bin_value=100):
     counts = []
     for i in range(len(adata)):
         nonzero_indices = adata.X[i].nonzero()
-        if isinstance(adata.X, scipy.sparse.csr_matrix):
+        if issparse(adata.X):
             genes = adata.var_names[nonzero_indices[1]]
         else:
             genes = adata.var_names[nonzero_indices]

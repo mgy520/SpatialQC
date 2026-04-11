@@ -6,8 +6,12 @@ import os
 script_dir = os.path.dirname(os.path.realpath(__file__))
 db_path = os.path.join(script_dir, 'data', 'cell_marker.db')
 
+_ALLOWED_MARKER_COLUMNS = frozenset({'species', 'tissue_class', 'tissue_type', 'cancer_type'})
+
 
 def get_available_options_from_db(option_type):
+    if option_type not in _ALLOWED_MARKER_COLUMNS:
+        raise ValueError(f"Invalid option_type: {option_type!r}")
     conn = sqlite3.connect(db_path)
     options = pd.read_sql_query(f"SELECT DISTINCT {option_type} FROM markers", conn)[option_type].tolist()
     conn.close()
@@ -33,8 +37,10 @@ def get_markers_from_db(species, tissue_class, tissue_type, cancer_type):
 
     conn = sqlite3.connect(db_path)
     df = pd.read_sql_query(
-        f"SELECT * FROM markers WHERE species = '{species}' AND tissue_class = '{tissue_class}' And tissue_type = '{tissue_type}' And cancer_type = '{cancer_type}'",
-        conn)
+        "SELECT * FROM markers WHERE species = ? AND tissue_class = ? AND tissue_type = ? AND cancer_type = ?",
+        conn,
+        params=(species, tissue_class, tissue_type, cancer_type),
+    )
     conn.close()
 
     if df.empty:

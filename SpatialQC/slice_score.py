@@ -3,41 +3,55 @@ import numpy as np
 import scrublet as scr
 import plotly.graph_objects as go
 from .get_markers import marker_decorator
-from scipy.sparse import issparse
 
 
 @marker_decorator
 def slice_score(adata, markers, mito='Mt-', slice='id', mito_p=0.1, doublet=True, s1=None, s2=None,
                 s3=None, s4=None, s5=None, s6=None, s7=None, s8=None):
-    default_values = {
-        's1': [-1, 0],
-        's2': [0.8, 0, 1],
-        's3': [0.2, 0.5, 0, 1, 2],
-        's4': [0.2, 0.5, 0.8, 0, 1, 2, 3],
-        's5': [0.2, 0.5, 0.8, 0, 1, 2, 3],
-        's6': [0.2, 0.5, 0.8, 0, 1, 2, 3],
-        's7': [-4, 0],
-        's8': [0.2, 0.5, 0, 1, 2]
-    }
-    for var_name, default_value in default_values.items():
-        if locals()[var_name] is None:
-            locals()[var_name] = default_value
+    if s1 is None:
+        s1 = [-1, 0]
+    if s2 is None:
+        s2 = [0.8, 0, 1]
+    if s3 is None:
+        s3 = [0.2, 0.5, 0, 1, 2]
+    if s4 is None:
+        s4 = [0.2, 0.5, 0.8, 0, 1, 2, 3]
+    if s5 is None:
+        s5 = [0.2, 0.5, 0.8, 0, 1, 2, 3]
+    if s6 is None:
+        s6 = [0.2, 0.5, 0.8, 0, 1, 2, 3]
+    if s7 is None:
+        s7 = [-4, 0]
+    if s8 is None:
+        s8 = [0.2, 0.5, 0, 1, 2]
 
     mito_genes = adata.var_names.str.startswith(mito)
 
-    adata.obs['percent_mt'] = np.sum(adata[:, mito_genes].X, axis=1) / np.sum(adata.X, axis=1)
+    mt_sum = np.ravel(np.asarray(np.sum(adata[:, mito_genes].X, axis=1)))
+    tot_sum = np.ravel(np.asarray(np.sum(adata.X, axis=1)))
+    adata.obs['percent_mt'] = np.divide(
+        mt_sum, tot_sum, out=np.zeros(adata.n_obs, dtype=float), where=tot_sum > 0)
+
     adata.obs['log10GenesPerUMI'] = np.log10(adata.obs['n_genes']) / np.log10(adata.obs['n_counts'])
 
     genes_b = set(markers)
     adata_genes = adata.var_names
     common_genes = adata_genes.isin(genes_b)
-    adata.obs['remain_ratio'] = np.sum(adata[:, common_genes].X > 0, axis=1) / len(genes_b)
-    adata.obs['marker_ratio'] = np.sum(adata[:, common_genes].X > 0, axis=1) / np.sum(adata.X > 0, axis=1)
-
-    if issparse(adata.X):
-        adata.obs['marker_exp'] = np.sum(adata[:, common_genes].X, axis=1).A1 / adata.obs['n_counts']
+    if len(genes_b) == 0:
+        z = np.zeros(adata.n_obs, dtype=float)
+        adata.obs['remain_ratio'] = z
+        adata.obs['marker_ratio'] = z
+        adata.obs['marker_exp'] = z
     else:
-        adata.obs['marker_exp'] = np.sum(adata[:, common_genes].X, axis=1) / adata.obs['n_counts']
+        n_markers = len(genes_b)
+        det = np.ravel(np.asarray(np.sum(adata[:, common_genes].X > 0, axis=1)))
+        adata.obs['remain_ratio'] = det / n_markers
+        genes_per_cell = np.ravel(np.asarray(np.sum(adata.X > 0, axis=1)))
+        adata.obs['marker_ratio'] = np.divide(
+            det, genes_per_cell, out=np.zeros(adata.n_obs, dtype=float), where=genes_per_cell > 0)
+
+        me = np.ravel(np.asarray(np.sum(adata[:, common_genes].X, axis=1)))
+        adata.obs['marker_exp'] = me / adata.obs['n_counts']
 
     if doublet:
         adata.obs[slice] = adata.obs[slice].astype('category')
