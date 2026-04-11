@@ -439,8 +439,8 @@ def main():
 
     # filter
     if args.f:
-        selected_slices = modified_adata.obs.groupby(args.slice)['cell_score'].median() >= args.s
-        selected_slices2 = modified_adata.obs.groupby(args.slice)['cell_score'].median()
+        selected_slices = modified_adata.obs.groupby(args.slice, observed=False)['cell_score'].median() >= args.s
+        selected_slices2 = modified_adata.obs.groupby(args.slice, observed=False)['cell_score'].median()
         for slice_name, score in selected_slices2.items():
             print(f"{slice_name} score: {score}")
 
@@ -452,7 +452,8 @@ def main():
         cdata = cdata[cdata.obs['predicted_doublets'].isin([False, None])].copy()
         if args.min_genes is None or args.min_genes == "None":
             if len(cdata.obs[args.slice].unique()) > 1:
-                thresholds = cdata.obs.groupby(args.slice).apply(lambda group: group['n_genes'].quantile(1 - args.n))
+                thresholds = cdata.obs.groupby(args.slice, observed=False).apply(
+                    lambda group: group['n_genes'].quantile(1 - args.n))
             else:
                 thresholds = cdata.obs['n_genes'].quantile(1 - args.n)
             final_threshold = int(thresholds.min() / 10) * 10

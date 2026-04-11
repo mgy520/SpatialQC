@@ -5,18 +5,18 @@ import matplotlib.pyplot as plt
 
 def valid_cells_per_slice(adata, min_genes_list2=None, slice='id'):
     min_genes_list = list(range(0, 800, 100)) if min_genes_list2 is None else min_genes_list2
-    library_median_n_genes = adata.obs.groupby(slice)['n_genes'].median().tolist()
+    library_median_n_genes = adata.obs.groupby(slice, observed=False)['n_genes'].median().tolist()
 
     fig = go.Figure()
 
-    s1 = adata.obs.groupby(slice).size()
+    s1 = adata.obs.groupby(slice, observed=False).size()
     s2_list = []
     colors = ['blue', 'red', 'green', 'orange', 'purple', 'pink', 'gray', 'cyan']
     colors_alpha = ['rgba(0, 0, 255, 0.25)', 'rgba(255, 0, 0, 0.25)', 'rgba(0, 255, 0, 0.25)',
                     'rgba(255, 165, 0, 0.25)', 'rgba(128, 0, 128, 0.25)', 'rgba(255, 192, 203, 0.25)',
                     'rgba(128, 128, 128, 0.25)', 'rgba(0, 255, 255, 0.25)']
     for i, min_genes in enumerate(min_genes_list):
-        s2 = adata.obs.loc[adata.obs['n_genes'] >= min_genes].groupby(slice).size()
+        s2 = adata.obs.loc[adata.obs['n_genes'] >= min_genes].groupby(slice, observed=False).size()
         if s2.empty or not any(s2):
             print(f"Warning: No cells with n_genes >= {min_genes}. Skipping min_genes={min_genes}.")
             continue
@@ -94,10 +94,10 @@ def create_bar_chart(adata, min_genes_list2=None, slice='id'):
 
     colors = ['blue', 'red', 'green', 'orange', 'purple', 'pink', 'gray', 'cyan']
 
-    s1 = adata.obs.groupby(slice).size()
+    s1 = adata.obs.groupby(slice, observed=False).size()
 
     for i, min_genes in enumerate(min_genes_list):
-        s2 = adata.obs.loc[adata.obs['n_genes'] >= min_genes].groupby(slice).size()
+        s2 = adata.obs.loc[adata.obs['n_genes'] >= min_genes].groupby(slice, observed=False).size()
         if s2.empty or not any(s2):
             print(f"Warning: No cells with n_genes >= {min_genes}. Skipping min_genes={min_genes}.")
             continue

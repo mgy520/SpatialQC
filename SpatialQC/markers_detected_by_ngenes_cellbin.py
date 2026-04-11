@@ -21,7 +21,9 @@ def markers_detected_by_diff_ngenes_bar(adata, markers, bin_value=100):
         counts.append(len(intersect))
 
     adata.obs["Markers intersect counts"] = counts
-    subset_counts = (adata.obs.groupby('n_genes_subset')['Markers intersect counts'].mean() / len(markers_set)).tolist()
+    subset_counts = (
+        adata.obs.groupby('n_genes_subset', observed=False)['Markers intersect counts'].mean() / len(markers_set)
+    ).tolist()
 
     fig = go.Figure(data=go.Bar(x=[f"{bins[i]}-{bins[i+1]}" for i in range(len(bins) - 1)], y=subset_counts))
     fig.update_layout(title=dict(text='Marker proportion ~ n_genes',x=0.5, y=0.9),
