@@ -1,4 +1,4 @@
-name: pub
+name: Deploy Docs
 
 on:
   push:
@@ -6,21 +6,16 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-
-      - name: Setup git auth
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
       - uses: actions/setup-python@v5
         with:
@@ -28,4 +23,12 @@ jobs:
 
       - run: pip install mkdocs-material mkdocstrings[python]
 
-      - run: mkdocs gh-deploy --force
+      - run: mkdocs build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
