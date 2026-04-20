@@ -1,13 +1,13 @@
 import anndata2ri
 from rpy2.robjects import r
-
-anndata2ri.activate()
+from rpy2.robjects.conversion import localconverter
 
 
 def convert_to_anndata(input1):
     r.assign("input", input1)
-    r(
-    '''
+    with localconverter(anndata2ri.converter):
+        r(
+            '''
     library(SpatialExperiment)
     library(Seurat)
     library(SingleCellExperiment)
@@ -23,11 +23,11 @@ def convert_to_anndata(input1):
     } else if (input_class == "SpatialExperiment") {
         colnames(spatialCoords(input2)) <- c('row','col')
         colData(input2) <- cbind(colData(input2), spatialCoords(input2))
-    }      
+    }
     adata = as(input2, "SingleCellExperiment")
     '''
-    )
-    adata = r['adata']
+        )
+        adata = r['adata']
     adata.obsm['spatial'] = adata.obs[['row', 'col']]
 
     return adata

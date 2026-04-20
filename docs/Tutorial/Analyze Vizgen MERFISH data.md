@@ -11,10 +11,10 @@ Then get the raw .h5ad file in jupyter with the following code:
 ```Python
 import squidpy as sq
 adata = sq.read.vizgen(
-    path='MERFISH/',
-    counts_file="datasets_mouse_brain_map_BrainReceptorShowcase_Slice1_Replicate1_cell_by_gene_S1R1.csv",
-    meta_file="datasets_mouse_brain_map_BrainReceptorShowcase_Slice1_Replicate1_cell_metadata_S1R1.csv",
-    transformation_file="datasets_mouse_brain_map_BrainReceptorShowcase_Slice1_Replicate1_images_micron_to_mosaic_pixel_transform.csv",
+    path='../data',
+    counts_file="cell_by_gene_S1R1.csv",
+    meta_file="cell_metadata_S1R1.csv",
+    transformation_file="micron_to_mosaic_pixel_transform.csv",
 )
 adata.write('vizgen.h5ad')
 ```
@@ -29,7 +29,7 @@ resolution; (2) Low depth; (3) Genes are marker genes of prior design.
 
 Execute SpatialQC in the shell terminal:
 ```bash
-SpatialQC --adata vizgen.h5ad --platform MERFISH --slice_number 1
+SpatialQC --input vizgen.h5ad --platform MERFISH --slice_number 1
 ```
 ```
 slice1 score: 4.0  
