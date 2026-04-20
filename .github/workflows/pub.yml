@@ -19,3 +19,4 @@ jobs:
           python-version: 3.8
       - run: pip install mkdocs-material mkdocstrings[python]
       - run: mkdocs gh-deploy --force
+        if: github.event_name == 'push'
